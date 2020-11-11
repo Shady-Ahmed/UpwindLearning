@@ -525,55 +525,6 @@ ax[5].set_ylabel(r'$u+a$', fontsize = 26)
 fig.subplots_adjust(hspace=0.7, wspace=0.8)
 
 plt.savefig('charact2.pdf', dpi = 500, bbox_inches = 'tight')
-#%%
-# gamma = 1.4
-# c1 = p/r**gamma
-# c2 = u-(2*a)/(gamma-1) 
-# c3 = u+(2*a)/(gamma-1) 
-
-# #mask = np.logical_and((c1>1.836), (c1<1.838)) 
-# mask = c2 == c2[200,0]
-# for i in range(400):
-#     for j in range(1,1000):
-#         if mask[i,j]:
-#             plt.plot(x[i],t[j],'*')
-# #%%
-
-# c1 = u*t + u[:,0].reshape([-1,1])
-# c2 = (u-a)*t + (u[:,0] - a[:,0]).reshape([-1,1])
-# c3 = (u+a)*t + (u[:,0] + a[:,0]).reshape([-1,1])
-
-
-# #%%
-# fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(13,5))
-# ax = ax.flat     
-# mapp='seismic'
-
-# axx = ax[0].contour(x,t,(c1).T,13,cmap=mapp)
-# cbar = fig.colorbar(axx, ax=ax[0], orientation='horizontal',aspect=10)
-# cbar.ax.tick_params(labelsize=10)
-
-# axx = ax[1].contour(x,t,(c2).T,15,cmap=mapp)
-# cbar = fig.colorbar(axx, ax=ax[1], orientation='horizontal',aspect=10)
-# cbar.ax.tick_params(labelsize=10)
-
-# axx = ax[2].contour(x,t,(c3).T,15,cmap=mapp)
-# cbar = fig.colorbar(axx, ax=ax[2], orientation='horizontal',aspect=10)
-# cbar.ax.tick_params(labelsize=10)
-
-
-# ax[0].set_title(r'$u$', fontsize = 16)
-# ax[1].set_title(r'$u-a$', fontsize = 16)
-# ax[2].set_title(r'$u+a$', fontsize = 16)
-
-
-# for i in range(3):
-#     ax[i].set_xlabel(r'$x$', fontsize = 16)
-#     ax[i].set_ylabel(r'$t$', fontsize = 16)
-
-# fig.subplots_adjust(hspace=0.4, wspace=0.35)
-
-# #plt.savefig('./charac.png', dpi = 500, bbox_inches = 'tight')
 
 
 #%%
