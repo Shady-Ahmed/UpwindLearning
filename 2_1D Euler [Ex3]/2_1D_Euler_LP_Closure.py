@@ -1,7 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Apr  4 14:36:54 2020
-@author: Shady
+Learning from past (LP) closure for 1D Shock-tube [Sod's problem]
+This correpsonds to Example 3 for the following paper:
+    "Interface learning of multiphysics and multiscale systems",
+     Physical Review E, 2020
+     
+For questions, comments, or suggestions, please contact Shady Ahmed,
+PhD candidate, School of Mechanical and Aerospace Engineering, 
+Oklahoma State University. @ shady.ahmed@okstate.edu
+last checked: 11/16/2020
 """
 
 #%% Import libraries
@@ -50,183 +57,41 @@ def create_training_data_lstm(features,labels, m, n, lookback):
 #compute rhs for numerical solutions
 #-----------------------------------------------------------------------------!
  
-
 ## Initial condition [problem definition]
-def init(ip,nx,dx):
+def init(nx,dx):
     
     lx = dx*nx
     x = np.linspace(-3*dx,lx+3*dx,nx+7)
     q = np.zeros([nx+7,3]) #3 ghost points in each direction
         
-    if ip == 1 :  #Sod's problem
+    rhoL = 1.0
+    uL = 0.0
+    pL = 1.0
     
-        rhoL = 1.0
-        uL = 0.0
-        pL = 1.0
-        
-        rhoR = 0.125
-        uR = 0.0
-        pR = 0.1
-        
-        x0 = 0.5
-        gamma = 1.4
-        tmax = 0.2
-        
-    elif ip == 2: #Lax's problem 
-          
-        rhoL=0.445
-        uL=0.698
-        pL=3.528
+    rhoR = 0.125
+    uR = 0.0
+    pR = 0.1
     
-        rhoR = 0.5
-        uR = 0.0
-        pR = 0.571
-        
-        x0 = 0.5
-        gamma = 1.40
-        tmax  = 0.12
-                    
-    elif ip == 3: #123 problem, see Toro !made of a two rarefaction wave 
-                  #!low density flows
-        rhoL=1.0
-        uL=-2.0
-        pL=0.4
-        
-        rhoR =1.0
-        uR = 2.0
-        pR = 0.4
-        
-        x0    = 0.5
-        gamma = 1.40
-        tmax  = 0.15
-
-    elif ip == 4: #High Mach problem, !Xiao, JCP 195, 2004
-        
-        rhoL=10.0
-        uL=2000.0
-        pL=500.0
-        
-        rhoR=20.0
-        uR=0.0
-        pR=500.0
-        
-        x0    = 0.5
-        gamma = 1.40
-        tmax  = 1.75e-4
-
-    elif ip ==  5: #Mach3 problem, !Xiao, JCP 195, 2004
-
-        rhoL=3.857
-        uL=0.92
-        pL=10.333
-        
-        rhoR=1.0
-        uR=3.55
-        pR=1.0
-        
-        x0    = 0.5
-        gamma = 1.40
-        tmax  = 0.09    
-    
-    elif ip == 6:  #Double shock wave
-  
-        rhoL=3.0
-        uL=100.0
-        pL=573.0	
-        
-        rhoR=3.0
-        uR=-100.0
-        pR=573.0
-        
-        x0    = 0.5
-        gamma = 1.40
-        tmax  = 0.01
-
-   
-    elif ip == 7:  #Toro's problem, Left Woodward-Collela
-                   #severe rest problem, left rarefaction, a contact and right shock
-
-        rhoL=1.0
-        uL=0.0
-        pL=1000.0	
-        
-        rhoR=1.0
-        uR=0.0
-        pR=0.01
-        
-        x0    = 0.5
-        gamma = 1.40
-        tmax  = 0.012
-          
-    elif ip == 8: #Toro's problem, !moving contact discontinuity
-    
-        rhoL=1.4
-        uL=0.1
-        pL=1.0
-        
-        rhoR=1.0
-        uR=0.1
-        pR=1.0
-        
-        x0    = 0.5
-        gamma = 1.40
-        tmax  = 2.0
-
-    elif ip == 9: #peak density, !J.A. Greenough, W.J. Rider / JCP 196 (2004) 259281
-    
-        rhoL=0.1261192
-        uL=8.9047029
-        pL=782.92899
-        
-        rhoR=6.591492
-        uR=2.2654207
-        pR=3.1544874
-        
-        x0    = 0.5
-        gamma = 1.40
-        tmax  = 0.0039
+    x0 = 0.5
+    gamma = 1.4
+    tmax = 0.2   
                
     #construction initial conditions for conserved variables 
-
-    if ip == 10: #Shu-Osher problem
-          
-        gamma = 1.40
-        tmax  = 0.18
-    
-        for i in range(nx+7):
-    
-            if (x[i] <= 0.1) :
-                r = 3.857143
-                u = 2.629369
-                p = 10.333333
-            else:
-                r = 1.0+0.2*np.sin(50.0*x[i])
-                u = 0.0
-                p = 1.0
-                
-            e=p/(r*(gamma-1.0))+0.5*u*u
-            #conservative variables 
-            q[i,0] = r
-            q[i,1] = r*u
-            q[i,2] = r*e
-
-    else:  #standard shock tube problems
-      
-        for i in range(nx+7):
-            if x[i] <= x0:
-                r = rhoL
-                u = uL
-                p = pL
-            else:
-                r = rhoR
-                u = uR
-                p = pR
-    	
-            e=p/(r*(gamma-1.0))+0.5*u*u
-            #conservative variables 
-            q[i,0] = r
-            q[i,1] = r*u
-            q[i,2] = r*e
+    for i in range(nx+7):
+        if x[i] <= x0:
+            r = rhoL
+            u = uL
+            p = pL
+        else:
+            r = rhoR
+            u = uR
+            p = pR
+	
+        e=p/(r*(gamma-1.0))+0.5*u*u
+        #conservative variables 
+        q[i,0] = r
+        q[i,1] = r*u
+        q[i,2] = r*e
 
     return tmax, gamma, q
 
@@ -250,7 +115,7 @@ def timestep(nx,q,dx,cfl,gamma):
 
 ########
 ## TVD Runge Kutta 3rd order
-def tvdrk3L(nx,dx,dt,q,ib,ir,im,iss,gamma,nxb):
+def tvdrk3L(nx,dx,dt,q,ib,gamma,nxb):
     
     a = 1.0/3.0
     b = 2.0/3.0
@@ -258,23 +123,21 @@ def tvdrk3L(nx,dx,dt,q,ib,ir,im,iss,gamma,nxb):
     u = np.copy(q)#     ql[-3:,:] = q[nxb-2:nxb+1,:]
 
     #1st step
-    s = rhsL(nx,dx,q,ib,ir,im,iss,gamma,nxb)
+    s = rhsL(nx,dx,q,ib,gamma,nxb)
     u[3:nxb-3+4,:] = q[3:nxb-3+4,:] + dt*s
     
     #2nd step
-    s = rhsL(nx,dx,u,ib,ir,im,iss,gamma,nxb)
+    s = rhsL(nx,dx,u,ib,gamma,nxb)
     u[3:nxb-3+4,:] = 0.75*q[3:nxb-3+4,:] + 0.25*u[3:nxb-3+4,:] + 0.25*dt*s
 
     #3rd step
-    s = rhsL(nx,dx,u,ib,ir,im,iss,gamma,nxb)
+    s = rhsL(nx,dx,u,ib,gamma,nxb)
     q[3:nxb-3+4,:] = a*q[3:nxb-3+4,:] + b*u[3:nxb-3+4,:] + b*dt*s
 
     return q
-   
-
 
 ## Computing Right Hand Side for left subdomain
-def rhsL(nx,dx,q,ib,ir,im,iss,gamma,nxb):
+def rhsL(nx,dx,q,ib,gamma,nxb):
 
     # Apply boundary conditions
     if ib ==1: # 1st order non-reflective (transmissive)
@@ -296,12 +159,7 @@ def rhsL(nx,dx,q,ib,ir,im,iss,gamma,nxb):
 
     	
     # Reconstruction scheme
-    if ir == 1: # MUSCL construction
-    	qL,qR = muscl(nxb-3,q,im,iss)
-    elif ir ==2: #WENO-3
-    	qL,qR = weno3(nxb-3,q)
-    else:  #WENO-5
-    	qL,qR = weno5(nxb-3,q)
+    qL,qR = weno5(nxb-3,q)
 
     fL = flux(nxb-3,qL,gamma)
     fR = flux(nxb-3,qR,gamma)
@@ -330,38 +188,6 @@ def rhsL(nx,dx,q,ib,ir,im,iss,gamma,nxb):
     	s[i,:] = -(f[i,:]-f[i-1,:])/dx
            
     return s[3:nxb-3+4]
-
-
-## 3rd order WENO
-def weno3(nx,q):
-    qL = np.zeros([nx+4,3])
-    qR = np.zeros([nx+4,3])
-    
-    eps = 1.0e-6
-    a = 2.0/3.0
-    b = 1.0/3.0
-    
-    for i in range(2,nx+4):
-      
-        b0 = (q[i+1,:] - q[i,:])**2
-        b1 = (q[i,:] - q[i-1,:])**2
-        
-        a0 = a/(eps+b0)**2
-        a1 = b/(eps+b1)**2
-        w0 = a0/(a0+a1)
-        w1 = a1/(a0+a1)
-        
-        qL[i,:]=0.5*w0*(q[i,:]+q[i+1,:]) + 0.5*w1*(-q[i-1,:]+3.0*q[i,:]) 
-        
-        a0 = b/(eps+b0)**2
-        a1 = a/(eps+b1)**2
-        w0 = a0/(a0+a1)
-        w1 = a1/(a0+a1)
-        
-        qR[i,:]=0.5*w0*(-q[i+2,:]+3.0*q[i+1,:])+ 0.5*w1*(q[i+1,:]+q[i,:])
-
-    return qL,qR
-
 
 ## !5th order WENO
 def weno5(nx,q):
@@ -411,8 +237,6 @@ def weno5(nx,q):
     
     return qL,qR 
 
-
-
 ## Computing fluxes from conserved quantities
 def flux(nx,q,gamma):
     f = np.zeros([nx+4,3])
@@ -422,8 +246,6 @@ def flux(nx,q,gamma):
         f[i,2] = q[i,1]*q[i,2]/q[i,0] + (gamma-1.0)*q[i,1]/q[i,0]*(q[i,2]-0.5*q[i,1]*q[i,1]/q[i,0])
 
     return f
-
-
 
 ## Computing results
 # Compute primitive variables from conservative variables
@@ -457,7 +279,7 @@ def outresult(fname,nx,dx,time,q):
 
     return 
 
-
+#export results for the left sub-domain
 def outresultL(fname,nxb,dx,time,q):
     
     lx = dx*nxb
@@ -480,7 +302,6 @@ def outresultL(fname,nxb,dx,time,q):
         a[i]= np.sqrt(gamma*p[i]/r[i])      #a: speed of sound
         m[i]= u[i]/a[i]                     #m: Mach number
     
-    
     #writing results at cell centers:
     np.savez(fname, time=time, x=x[3:nxb+4], r=r[3:nxb+4],\
                           u=u[3:nxb+4], p=p[3:nxb+4], e=e[3:nxb+4],\
@@ -489,8 +310,7 @@ def outresultL(fname,nxb,dx,time,q):
     return 
 
 
-
-## Computing results
+## reading data
 def inresult(fname):
     
     lx = dx*nx
@@ -527,24 +347,17 @@ def inresult(fname):
 
 
 
-
-
 #%% Main program:
     
 # Inputs
 
 nx = 400        #nx;
 cfl = 0.5   	#cfl;
-ip = 1          #ip;[1]Sod,[2]Lax,[3]123,[4]HM,[5]M3,[6]2S,[7]L,[8]MC,[9]peak,[10]SO
-iss = 5         #iss;[1]CHARM,[5]minmod,[6]MC,[8]ospre,[10]superbee,[15]vanLeer
 it = 1      	#it;[0]Euler1st,[1]RK3,[2]RK4
-ir = 3      	#ir;[1]MUSCL,[2]WENO3,[3]WENO5
-im = 1      	#im;[1]1st,[2]up,[3]Fromm,[4]3rd,[5]cen,[6]KT
 ib = 1      	#ib;[1]1st,[2]2nd,[3]3rd
 nt = 90000000   #nt;maximum number of time step
 
 lx = 1
-
 dx = lx/nx
 
 xx = np.linspace(0,lx,nx+1)
@@ -563,14 +376,13 @@ else:
         
         
 # Initial condition
-tmax, gamma, q = init(ip,nx,dx)
+tmax, gamma, q = init(nx,dx)
 dtmin = 1e-4
 ns = int(tmax/dtmin)
 
 #%% Read data
 
 npt = 3 #number of points in input
-
 
 npt = npt+2 #(to consider 3 ghost points)
 xi = np.zeros((ns+1,4*npt+1))
@@ -592,10 +404,8 @@ for k in range(ns+1):
     yi[k,3:6] = q[nxb-2:nxb+1,1]
     yi[k,6:9] = q[nxb-2:nxb+1,2]
 
-#% Divide into training and testing
-
-features = xi #np.vstack([ np.copy(xi[0:ns/2:50,:]), np.copy(xi[ns/2:,:]) ] )
-labels = yi# np.vstack([ np.copy(yi[0:ns/2:50,:]), np.copy(yi[ns/2:,:]) ] )
+features = xi 
+labels = yi
 
 lookback = 1
 
@@ -605,7 +415,7 @@ if training == 'true':
                                           features.shape[1], lookback)
     
     # Scaling data
-    m,n = ytrain.shape # m is number of training samples, n is number of output features [i.e., n=Q-R]
+    m,n = ytrain.shape # m is number of training samples, n is number of output features
     scalerOut = MinMaxScaler(feature_range=(-1,1))
     scalerOut = scalerOut.fit(ytrain)
     ytrain = scalerOut.transform(ytrain)
@@ -646,8 +456,6 @@ if training == 'true':
     model = Sequential()
     #model.add(Dropout(0.2))
     model.add(LSTM(20, input_shape=(lookback, features.shape[1]), return_sequences=True, activation='tanh'))
-    #model.add(LSTM(80, input_shape=(lookback, features.shape[1]), return_sequences=True, activation='tanh'))
-    #model.add(LSTM(80, input_shape=(lookback, features.shape[1]), return_sequences=True, activation='tanh'))
     model.add(LSTM(20, input_shape=(lookback, features.shape[1]), activation='tanh'))
     model.add(Dense(labels.shape[1]))
     
@@ -725,11 +533,6 @@ for i in range(lookback):
 # Prediction
 for k in range(lookback,ns+1):
     
-    #compute time step from cfl
-    #dt = timestep(nx,q,dx,cfl,gamma)
-    #if dt<dtmin:
-    #    dtmin = dt
-
     dt = dtmin
     #check for final time step
     if (time+dt >=tmax) :
@@ -739,7 +542,7 @@ for k in range(lookback,ns+1):
     time = time + dt
     
     # Internal points
-    qLSTM[:,:,k] = tvdrk3L(nx,dx,dt,np.copy(qLSTM[:,:,k-1]),ib,ir,im,iss,gamma,nxb)
+    qLSTM[:,:,k] = tvdrk3L(nx,dx,dt,np.copy(qLSTM[:,:,k-1]),ib,gamma,nxb)
 
     
     #Last points
